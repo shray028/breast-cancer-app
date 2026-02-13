@@ -1,125 +1,474 @@
 import streamlit as st
+import pickle
 import pandas as pd
-import joblib
 import numpy as np
 from sklearn.metrics import (
-    accuracy_score, roc_auc_score, precision_score,
-    recall_score, f1_score, matthews_corrcoef,
+    accuracy_score, precision_score, recall_score, 
+    f1_score, matthews_corrcoef, roc_auc_score,
     confusion_matrix, classification_report
 )
-import matplotlib.pyplot as plt
-import seaborn as sns
+import plotly.graph_objects as go
+import plotly.express as px
+from pathlib import Path
+import base64
 
-# ---------------- PAGE CONFIG ----------------
+# Page configuration
 st.set_page_config(
     page_title="Breast Cancer Classification",
-    layout="wide"
+    page_icon="🎗️",
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# ---------------- THEME (Light Blue + White) ----------------
+# Improved Light Medical Theme CSS
 st.markdown("""
 <style>
-body {
-    background-color: #f5fbff;
+
+/* ---------- Fonts ---------- */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;600&display=swap');
+
+/* ---------- Main Background ---------- */
+.main {
+    background: #ffffff;
 }
+
+/* ---------- Sidebar ---------- */
 [data-testid="stSidebar"] {
-    background-color: #e6f2ff;
+    background: #f9e6ee;
+    border-right: 1px solid #eed3dd;
 }
+
+/* ---------- Headers ---------- */
 h1, h2, h3 {
-    color: #1f77b4;
+    font-family: 'Playfair Display', serif;
+    color: #7a1f3d;
 }
+
+h1 {
+    font-size: 2.4rem !important;
+    text-align: center;
+    padding: 1rem 0;
+    color: #c2185b;
+    text-shadow: none;
+}
+
+/* ---------- Body Text ---------- */
+p, div, label {
+    font-family: 'Inter', sans-serif;
+    color: #2f2f2f;
+}
+
+/* ---------- Cards ---------- */
+.info-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.4rem;
+    border: 1px solid #f0d6df;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 1rem 0;
+}
+
+/* ---------- Metric Cards ---------- */
+.metric-card {
+    background: #fff7fa;
+    border-radius: 10px;
+    padding: 1rem;
+    border: 1px solid #f0d6df;
+    text-align: center;
+}
+
+/* ---------- Buttons ---------- */
+.stButton > button {
+    background: #d81b60;
+    color: white;
+    border-radius: 8px;
+    padding: 0.6rem 1.6rem;
+    font-weight: 600;
+    border: none;
+}
+
+.stButton > button:hover {
+    background: #ad1457;
+}
+
+/* ---------- File Uploader ---------- */
+[data-testid="stFileUploader"] {
+    background: #ffffff;
+    border: 1px dashed #e4b8c7;
+    border-radius: 10px;
+}
+
+/* ---------- Select Box ---------- */
+.stSelectbox > div > div {
+    background-color: white;
+    border: 1px solid #e4b8c7;
+    border-radius: 8px;
+}
+
+/* ---------- Alerts ---------- */
+.stAlert {
+    background-color: #fff6f9;
+    border-left: 4px solid #d81b60;
+}
+
+/* ---------- Ribbon ---------- */
+.ribbon {
+    background: #f06292;
+    color: white;
+    padding: 0.4rem 1.6rem;
+    border-radius: 20px;
+    display: inline-block;
+    font-weight: 600;
+    margin: 0.8rem 0;
+}
+
+/* ---------- Divider ---------- */
+hr {
+    border: none;
+    height: 1px;
+    background: #f0d6df;
+    margin: 1.5rem 0;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- TITLE ----------------
-st.title("🩺 Breast Cancer Classification Dashboard")
-st.write("Upload **test dataset only**, select a model, and view evaluation metrics.")
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.header("🔧 Configuration")
+# Helper function to load models
+@st.cache_resource
+def load_model(model_name):
+    """Load a trained model from pickle file"""
+    model_path = Path("model") / f"{model_name}.pkl"
+    try:
+        with open(model_path, 'rb') as file:
+            model = pickle.load(file)
+        return model
+    except Exception as e:
+        st.error(f"Error loading model {model_name}: {str(e)}")
+        return None
 
-model_choice = st.sidebar.selectbox(
-    "Select Model",
-    [
-        "Logistic Regression",
-        "Decision Tree",
-        "KNN",
-        "Naive Bayes",
-        "Random Forest",
-        "XGBoost"
-    ]
-)
-
-uploaded_file = st.sidebar.file_uploader(
-    "Upload Test CSV",
-    type=["csv"]
-)
-
-# ---------------- MODEL LOADER ----------------
-MODEL_PATHS = {
-    "Logistic Regression": "model/saved_models/logistic.pkl",
-    "Decision Tree": "model/saved_models/dt.pkl",
-    "KNN": "model/saved_models/knn.pkl",
-    "Naive Bayes": "model/saved_models/nb.pkl",
-    "Random Forest": "model/saved_models/rf.pkl",
-    "XGBoost": "model/saved_models/xgb.pkl"
-}
-
-FEATURE_PATH = "model/saved_models/features.pkl"
-
-# ---------------- MAIN LOGIC ----------------
-if uploaded_file is not None:
-    data = pd.read_csv(uploaded_file)
-
-    if "target" not in data.columns:
-        st.error("CSV must contain a 'target' column")
-        st.stop()
-
-    X_test = data.drop(columns=["target"])
-    y_test = data["target"]
-
-    features = joblib.load(FEATURE_PATH)
-    X_test = X_test[features]
-
-    model = joblib.load(MODEL_PATHS[model_choice])
-
-    y_pred = model.predict(X_test)
-
-    if hasattr(model, "predict_proba"):
-        y_prob = model.predict_proba(X_test)[:, 1]
+# Helper function to calculate metrics
+def calculate_metrics(y_true, y_pred, y_pred_proba=None):
+    """Calculate all evaluation metrics"""
+    metrics = {
+        'Accuracy': accuracy_score(y_true, y_pred),
+        'Precision': precision_score(y_true, y_pred, average='weighted', zero_division=0),
+        'Recall': recall_score(y_true, y_pred, average='weighted', zero_division=0),
+        'F1 Score': f1_score(y_true, y_pred, average='weighted', zero_division=0),
+        'MCC Score': matthews_corrcoef(y_true, y_pred)
+    }
+    
+    # Calculate AUC if probability predictions are available
+    if y_pred_proba is not None:
+        try:
+            if len(np.unique(y_true)) == 2:  # Binary classification
+                metrics['AUC Score'] = roc_auc_score(y_true, y_pred_proba[:, 1])
+            else:  # Multi-class
+                metrics['AUC Score'] = roc_auc_score(y_true, y_pred_proba, multi_class='ovr', average='weighted')
+        except:
+            metrics['AUC Score'] = 0.0
     else:
-        y_prob = None
+        metrics['AUC Score'] = 0.0
+    
+    return metrics
 
-    # ---------------- METRICS ----------------
-    col1, col2, col3 = st.columns(3)
+# Function to plot confusion matrix
+def plot_confusion_matrix(y_true, y_pred):
+    """Create an interactive confusion matrix using Plotly"""
+    cm = confusion_matrix(y_true, y_pred)
+    
+    # Create labels
+    labels = sorted(np.unique(y_true))
+    label_names = [f'Class {i}' for i in labels]
+    
+    # Create heatmap
+    fig = go.Figure(data=go.Heatmap(
+        z=cm,
+        x=label_names,
+        y=label_names,
+        colorscale=[[0, '#fff0f5'], [0.5, '#ffb3d9'], [1, '#ff1493']],
+        text=cm,
+        texttemplate='%{text}',
+        textfont={"size": 16, "color": "white"},
+        hoverongaps=False,
+        colorbar=dict(
+            title="Count",
+            titleside="right",
+            tickmode="linear",
+            tick0=0,
+            dtick=cm.max()//5 if cm.max() > 5 else 1
+        )
+    ))
+    
+    fig.update_layout(
+        title={
+            'text': 'Confusion Matrix',
+            'x': 0.5,
+            'xanchor': 'center',
+            'font': {'size': 20, 'color': '#8b0045', 'family': 'Playfair Display'}
+        },
+        xaxis_title='Predicted Label',
+        yaxis_title='True Label',
+        width=600,
+        height=500,
+        plot_bgcolor='white',
+        paper_bgcolor='white',
+        font=dict(family='Lato', color='#4a0026'),
+        xaxis=dict(side='bottom'),
+        yaxis=dict(autorange='reversed')
+    )
+    
+    return fig
 
-    col1.metric("Accuracy", f"{accuracy_score(y_test, y_pred):.3f}")
-    col2.metric("Precision", f"{precision_score(y_test, y_pred):.3f}")
-    col3.metric("Recall", f"{recall_score(y_test, y_pred):.3f}")
+# Function to display classification report
+def display_classification_report(y_true, y_pred):
+    """Display classification report as a formatted dataframe"""
+    report = classification_report(y_true, y_pred, output_dict=True, zero_division=0)
+    
+    # Convert to dataframe
+    df_report = pd.DataFrame(report).transpose()
+    
+    # Format the dataframe
+    df_report = df_report.round(3)
+    
+    # Style the dataframe
+    styled_df = df_report.style.background_gradient(
+        cmap='RdPu', 
+        subset=['precision', 'recall', 'f1-score']
+    ).format(precision=3)
+    
+    return styled_df
 
-    col4, col5, col6 = st.columns(3)
-
-    col4.metric("F1 Score", f"{f1_score(y_test, y_pred):.3f}")
-    col5.metric("MCC", f"{matthews_corrcoef(y_test, y_pred):.3f}")
-
-    if y_prob is not None:
-        col6.metric("AUC", f"{roc_auc_score(y_test, y_prob):.3f}")
+# Main app
+def main():
+    # Header with ribbon
+    st.markdown('<h1>🎗️ Breast Cancer Classification System</h1>', unsafe_allow_html=True)
+    st.markdown(
+        '<center><div class="ribbon">Empowering Early Detection Through Machine Learning</div></center>', 
+        unsafe_allow_html=True
+    )
+    
+    # Introduction section
+    st.markdown("---")
+    col1, col2 = st.columns([2, 1])
+    
+    with col1:
+        st.markdown("""
+        <div class="info-card">
+        <h3>📊 About This Application</h3>
+        <p style='font-size: 1.1rem; line-height: 1.8;'>
+        Welcome to our advanced <strong>Breast Cancer Classification System</strong>. This application leverages 
+        state-of-the-art machine learning algorithms to predict breast cancer diagnosis with high accuracy.
+        </p>
+        <p style='font-size: 1.1rem; line-height: 1.8;'>
+        Our system compares <strong>six different ML models</strong> to provide comprehensive diagnostic insights, 
+        helping healthcare professionals make informed decisions.
+        </p>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    with col2:
+        st.markdown("""
+        <div class="info-card">
+        <h3>🔬 Dataset Information</h3>
+        <ul style='font-size: 1rem; line-height: 1.8;'>
+        <li><strong>Domain:</strong> Medical Diagnosis</li>
+        <li><strong>Task:</strong> Binary Classification</li>
+        <li><strong>Features:</strong> Clinical measurements</li>
+        <li><strong>Classes:</strong> Malignant / Benign</li>
+        </ul>
+        </div>
+        """, unsafe_allow_html=True)
+    
+    # Sidebar
+    st.sidebar.markdown("### Model Configuration")
+    st.sidebar.markdown("---")
+    
+    # Model selection
+    model_options = {
+        'Logistic Regression': 'logistic',
+        'Decision Tree Classifier': 'decision_tree',
+        'K-Nearest Neighbors': 'knn',
+        'Naive Bayes': 'naive_bayes',
+        'Random Forest (Ensemble)': 'random_forest',
+        'XGBoost (Ensemble)': 'xgboost'
+    }
+    
+    selected_model_name = st.sidebar.selectbox(
+        '🤖 Select ML Model',
+        options=list(model_options.keys()),
+        help="Choose a machine learning model for classification"
+    )
+    
+    selected_model_file = model_options[selected_model_name]
+    
+    # Model descriptions
+    model_descriptions = {
+        'Logistic Regression': 'A linear model for binary classification using logistic function. Fast and interpretable.',
+        'Decision Tree Classifier': 'Tree-based model that makes decisions through hierarchical splits. Easy to visualize.',
+        'K-Nearest Neighbors': 'Instance-based learning algorithm that classifies based on nearest training examples.',
+        'Naive Bayes': 'Probabilistic classifier based on Bayes theorem with strong independence assumptions.',
+        'Random Forest (Ensemble)': 'Ensemble of decision trees using bagging. Reduces overfitting and improves accuracy.',
+        'XGBoost (Ensemble)': 'Gradient boosting ensemble method. Highly efficient and often achieves best performance.'
+    }
+    
+    st.sidebar.info(f"**ℹ️ {selected_model_name}**\n\n{model_descriptions[selected_model_name]}")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 📁 Data Upload")
+    
+    # Download sample data button
+    sample_data_path = Path("data/test_data.csv")
+    if sample_data_path.exists():
+        with open(sample_data_path, 'rb') as f:
+            st.sidebar.download_button(
+                label="⬇️ Download Sample Test Data",
+                data=f,
+                file_name="test_data.csv",
+                mime="text/csv",
+                help="Download a sample CSV file to test the application"
+            )
     else:
-        col6.metric("AUC", "N/A")
+        st.sidebar.warning("Sample test data not found at data/test_data.csv")
+    
+    st.sidebar.markdown("---")
+    
+    # File uploader
+    st.markdown("---")
+    st.markdown("### 📤 Upload Test Dataset")
+    
+    uploaded_file = st.file_uploader(
+        "Choose a CSV file containing test data",
+        type=['csv'],
+        help="Upload your test dataset in CSV format. Make sure it contains the same features as the training data."
+    )
+    
+    if uploaded_file is not None:
+        try:
+            # Load the uploaded file
+            df = pd.read_csv(uploaded_file)
+            
+            st.success(f"✅ Successfully loaded {len(df)} samples from the uploaded file!")
+            
+            # Display dataset preview
+            with st.expander("👁️ Preview Dataset", expanded=False):
+                st.dataframe(df.head(10), use_container_width=True)
+                st.caption(f"Showing first 10 rows of {len(df)} total samples")
+            
+            # Check if target column exists
+            if 'target' not in df.columns and 'label' not in df.columns and 'diagnosis' not in df.columns:
+                st.error("⚠️ Target column not found! Please ensure your CSV has a column named 'target', 'label', or 'diagnosis'.")
+                return
+            
+            # Determine target column
+            if 'target' in df.columns:
+                target_col = 'target'
+            elif 'label' in df.columns:
+                target_col = 'label'
+            else:
+                target_col = 'diagnosis'
+            
+            # Separate features and target
+            y_true = df[target_col]
+            X_test = df.drop(columns=[target_col])
+            
+            st.markdown("---")
+            
+            # Load and predict with selected model
+            col1, col2, col3 = st.columns([1, 2, 1])
+            with col2:
+                if st.button("🚀 Run Prediction & Evaluate", use_container_width=True):
+                    with st.spinner(f'Loading {selected_model_name} model and making predictions...'):
+                        # Load model
+                        model = load_model(selected_model_file)
+                        
+                        if model is not None:
+                            try:
+                                # Make predictions
+                                y_pred = model.predict(X_test)
+                                
+                                # Get probability predictions if available
+                                try:
+                                    y_pred_proba = model.predict_proba(X_test)
+                                except:
+                                    y_pred_proba = None
+                                
+                                # Calculate metrics
+                                metrics = calculate_metrics(y_true, y_pred, y_pred_proba)
+                                
+                                st.markdown("---")
+                                st.markdown(f"## 📊 Model Performance: {selected_model_name}")
+                                st.markdown("---")
+                                
+                                # Display metrics in cards
+                                st.markdown("### 🎯 Evaluation Metrics")
+                                
+                                cols = st.columns(3)
+                                metric_items = list(metrics.items())
+                                
+                                for idx, (metric_name, metric_value) in enumerate(metric_items):
+                                    with cols[idx % 3]:
+                                        st.markdown(f"""
+                                        <div class="metric-card">
+                                            <h4 style='color: #8b0045; margin-bottom: 0.5rem;'>{metric_name}</h4>
+                                            <p style='font-size: 2rem; font-weight: bold; color: #c71585; margin: 0;'>
+                                                {metric_value:.4f}
+                                            </p>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                
+                                st.markdown("---")
+                                
+                                # Confusion Matrix and Classification Report
+                                col1, col2 = st.columns(2)
+                                
+                                with col1:
+                                    st.markdown("### 🔄 Confusion Matrix")
+                                    cm_fig = plot_confusion_matrix(y_true, y_pred)
+                                    st.plotly_chart(cm_fig, use_container_width=True)
+                                
+                                with col2:
+                                    st.markdown("### 📋 Classification Report")
+                                    styled_report = display_classification_report(y_true, y_pred)
+                                    st.dataframe(styled_report, use_container_width=True)
+                                
+                                # Summary
+                                st.markdown("---")
+                                st.markdown("### ✨ Performance Summary")
+                                
+                                best_metric = max(metrics, key=metrics.get)
+                                st.success(f"""
+                                    **Best Performing Metric:** {best_metric} ({metrics[best_metric]:.4f})
+                                    
+                                    The {selected_model_name} model has been evaluated on {len(y_true)} samples.
+                                    Overall accuracy: **{metrics['Accuracy']:.2%}**
+                                """)
+                                
+                            except Exception as e:
+                                st.error(f"❌ Error during prediction: {str(e)}")
+                        else:
+                            st.error("❌ Failed to load the model. Please check if the model file exists in the 'model' folder.")
+            
+        except Exception as e:
+            st.error(f"❌ Error reading CSV file: {str(e)}")
+    
+    else:
+        st.info("👆 Please upload a CSV file to begin classification and evaluation.")
+    
+    # Footer
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #8b0045; padding: 2rem 0;'>
+        <p style='font-size: 0.9rem;'>
+            🎗️ <strong>Breast Cancer Classification System</strong> | 
+            Developed for ML Assignment 2 | 
+            M.Tech (AIML/DSE) - BITS Pilani
+        </p>
+        <p style='font-size: 0.8rem; color: #c71585;'>
+            Early detection saves lives. This tool is for educational purposes only.
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # ---------------- CONFUSION MATRIX ----------------
-    st.subheader("Confusion Matrix")
-    cm = confusion_matrix(y_test, y_pred)
-
-    fig, ax = plt.subplots()
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("Actual")
-    st.pyplot(fig)
-
-    # ---------------- CLASSIFICATION REPORT ----------------
-    st.subheader("Classification Report")
-    st.text(classification_report(y_test, y_pred))
-
-else:
-    st.info("⬅ Upload a CSV file from the sidebar to begin")
+if __name__ == "__main__":
+    main()
