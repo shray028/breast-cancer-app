@@ -66,6 +66,7 @@ p, div, label {
     border: 1px solid #f0d6df;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     margin: 1rem 0;
+    width: 100%;
 }
 
 /* ---------- Metric Cards ---------- */
@@ -79,8 +80,8 @@ p, div, label {
 
 /* ---------- Buttons ---------- */
 .stButton > button {
-    background: #d81b60;
-    color: white;
+    background: #f48fb1;
+    color: ffffff;
     border-radius: 8px;
     padding: 0.6rem 1.6rem;
     font-weight: 600;
@@ -88,7 +89,7 @@ p, div, label {
 }
 
 .stButton > button:hover {
-    background: #ad1457;
+    background: #ec407a;
 }
 
 /* ---------- File Uploader ---------- */
@@ -128,6 +129,36 @@ hr {
     height: 1px;
     background: #f0d6df;
     margin: 1.5rem 0;
+}
+            
+            /* ---------- Sidebar Info Card ---------- */
+.sidebar-card {
+    background: #ffffff;
+    border-left: 4px solid #d81b60;
+    padding: 0.9rem 1rem;
+    border-radius: 10px;
+    margin-top: 0.6rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+.sidebar-card h4 {
+    margin: 0 0 0.4rem 0;
+    color: #8b0045;
+    font-size: 1rem;
+}
+
+.sidebar-card p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #3a3a3a;
+    line-height: 1.5;
+}
+
+/* ---------- Expander Header ---------- */
+[data-testid="stExpander"] summary {
+    font-weight: 600;
+    color: #7a1f3d;
+    font-size: 1.05rem;
 }
 
 </style>
@@ -189,7 +220,7 @@ def plot_confusion_matrix(y_true, y_pred):
         colorscale=[[0, '#fff0f5'], [0.5, '#ffb3d9'], [1, '#ff1493']],
         text=cm,
         texttemplate='%{text}',
-        textfont={"size": 16, "color": "white"},
+        textfont={"size": 16, "color": "#2f2f2f"},
         hoverongaps=False,
         colorbar=dict(
             title="Count",
@@ -251,26 +282,34 @@ def main():
     # Introduction section
     st.markdown("---")
     col1, col2 = st.columns([2, 1])
-    
+
     with col1:
         st.markdown("""
         <div class="info-card">
-        <h3>📊 About This Application</h3>
+        <h3>About This Application</h3>
+
         <p style='font-size: 1.1rem; line-height: 1.8;'>
-        Welcome to our advanced <strong>Breast Cancer Classification System</strong>. This application leverages 
+        Welcome to <strong>Breast Cancer Classification System</strong>. This application leverages 
         state-of-the-art machine learning algorithms to predict breast cancer diagnosis with high accuracy.
         </p>
+
         <p style='font-size: 1.1rem; line-height: 1.8;'>
-        Our system compares <strong>six different ML models</strong> to provide comprehensive diagnostic insights, 
+        This system compares <strong>six different ML models</strong> to provide comprehensive diagnostic insights, 
         helping healthcare professionals make informed decisions.
         </p>
+
+        <!-- Spacer to match right card height -->
+        <div style="height: 18px;"></div>
+
         </div>
         """, unsafe_allow_html=True)
-    
+
+
     with col2:
         st.markdown("""
         <div class="info-card">
-        <h3>🔬 Dataset Information</h3>
+        <h3>Dataset Information</h3>
+
         <ul style='font-size: 1rem; line-height: 1.8;'>
         <li><strong>Domain:</strong> Medical Diagnosis</li>
         <li><strong>Task:</strong> Binary Classification</li>
@@ -279,9 +318,13 @@ def main():
         </ul>
         </div>
         """, unsafe_allow_html=True)
+
     
     # Sidebar
-    st.sidebar.markdown("### Model Configuration")
+    st.sidebar.markdown(
+        '<h2 class="sidebar-heading">Model Configuration</h2>',
+        unsafe_allow_html=True
+    )
     st.sidebar.markdown("---")
     
     # Model selection
@@ -295,7 +338,7 @@ def main():
     }
     
     selected_model_name = st.sidebar.selectbox(
-        '🤖 Select ML Model',
+        '-> Select ML Model',
         options=list(model_options.keys()),
         help="Choose a machine learning model for classification"
     )
@@ -312,10 +355,16 @@ def main():
         'XGBoost (Ensemble)': 'Gradient boosting ensemble method. Highly efficient and often achieves best performance.'
     }
     
-    st.sidebar.info(f"**ℹ️ {selected_model_name}**\n\n{model_descriptions[selected_model_name]}")
+    # st.sidebar.info(f"**{selected_model_name}**\n\n{model_descriptions[selected_model_name]}")
+    st.sidebar.markdown(f"""
+    <div class="sidebar-card">
+        <h4>{selected_model_name}</h4>
+        <p>{model_descriptions[selected_model_name]}</p>
+    </div>
+    """, unsafe_allow_html=True)
     
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 📁 Data Upload")
+    st.sidebar.markdown("### Test Data")
     
     # Download sample data button
     sample_data_path = Path("data/test_data.csv")
@@ -351,7 +400,7 @@ def main():
             st.success(f"✅ Successfully loaded {len(df)} samples from the uploaded file!")
             
             # Display dataset preview
-            with st.expander("👁️ Preview Dataset", expanded=False):
+            with st.expander("⬇️ Preview Dataset", expanded=False):
                 st.dataframe(df.head(10), use_container_width=True)
                 st.caption(f"Showing first 10 rows of {len(df)} total samples")
             
@@ -377,7 +426,7 @@ def main():
             # Load and predict with selected model
             col1, col2, col3 = st.columns([1, 2, 1])
             with col2:
-                if st.button("🚀 Run Prediction & Evaluate", use_container_width=True):
+                if st.button("Run Prediction & Evaluate", use_container_width=True):
                     with st.spinner(f'Loading {selected_model_name} model and making predictions...'):
                         # Load model
                         model = load_model(selected_model_file)
@@ -420,17 +469,33 @@ def main():
                                 st.markdown("---")
                                 
                                 # Confusion Matrix and Classification Report
-                                col1, col2 = st.columns(2)
-                                
-                                with col1:
-                                    st.markdown("### 🔄 Confusion Matrix")
-                                    cm_fig = plot_confusion_matrix(y_true, y_pred)
-                                    st.plotly_chart(cm_fig, use_container_width=True)
-                                
-                                with col2:
-                                    st.markdown("### 📋 Classification Report")
-                                    styled_report = display_classification_report(y_true, y_pred)
-                                    st.dataframe(styled_report, use_container_width=True)
+                                # ---------- Classification Report (Top) ----------
+                                st.markdown("### 📋 Classification Report")
+
+                                styled_report = display_classification_report(y_true, y_pred)
+
+                                st.dataframe(
+                                    styled_report,
+                                    use_container_width=True
+                                )
+
+                                st.markdown("---")
+
+
+                                # ---------- Confusion Matrix (Bottom) ----------
+                                st.markdown("### 🔄 Confusion Matrix")
+
+                                cm_fig = plot_confusion_matrix(y_true, y_pred)
+
+                                # Center the square matrix
+                                c1, c2, c3 = st.columns([1, 2, 1])
+
+                                with c2:
+                                    st.plotly_chart(
+                                        cm_fig,
+                                        use_container_width=False
+                                    )
+
                                 
                                 # Summary
                                 st.markdown("---")
@@ -462,7 +527,7 @@ def main():
         <p style='font-size: 0.9rem;'>
             🎗️ <strong>Breast Cancer Classification System</strong> | 
             Developed for ML Assignment 2 | 
-            M.Tech (AIML/DSE) - BITS Pilani
+            M.Tech AIML - BITS Pilani
         </p>
         <p style='font-size: 0.8rem; color: #c71585;'>
             Early detection saves lives. This tool is for educational purposes only.
