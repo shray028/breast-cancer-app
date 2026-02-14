@@ -173,3 +173,7 @@ All six Machine Learning models successfully classified breast cancer tumors wit
 This project demonstrates a complete end-to-end Machine Learning pipeline including preprocessing, model training, evaluation, comparison, and deployment via Streamlit.
 
 ---
+##  Student Details
+
+Name: Shray Vijay
+ID: 2025AA05533
