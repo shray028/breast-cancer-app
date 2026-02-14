@@ -1,35 +1,26 @@
-# 🧠 Breast Cancer Classification — ML Deployment Project
+# Breast Cancer Classification — Machine Learning Deployment Project
 
 ---
 
 ## 📌 Problem Statement
 
-The objective of this project is to build and evaluate multiple Machine Learning classification models to predict whether a breast tumor is **Malignant** or **Benign** based on diagnostic measurements.
+The objective of this project is to develop and evaluate multiple Machine Learning classification models to predict whether a breast tumor is **Malignant** (cancerous) or **Benign** (non-cancerous) based on diagnostic measurements.
 
-The project also involves developing an interactive **Streamlit web application** where users can upload test data, select trained models, and visualize predictions along with evaluation metrics.
+In addition to model development, an interactive **Streamlit web application** was built to demonstrate real-time predictions, model comparison, and evaluation on unseen test data.
 
-This demonstrates a complete end-to-end ML workflow including model training, evaluation, comparison, and deployment.
+This project showcases a complete end-to-end Machine Learning workflow including preprocessing, training, evaluation, and deployment.
 
 ---
 
 ## 📊 Dataset Description
 
-* **Dataset Name:** Breast Cancer Wisconsin Diagnostic Dataset
-* **Source:** Kaggle / UCI Machine Learning Repository
-* **Total Instances:** 569
-* **Total Features:** 30 numerical features
-* **Target Variable:** Diagnosis
+* **Dataset Name:** Breast Cancer Dataset
+* **Source:** Kaggle — Breast Cancer Dataset by Yasser H.
+* **Instances:** 569
+* **Features:** 30 numerical features
+* **Problem Type:** Binary Classification
 
-### Target Classes
-
-| Value | Class     |
-| ----- | --------- |
-| 0     | Malignant |
-| 1     | Benign    |
-
-### Feature Information
-
-Features are computed from digitized images of Fine Needle Aspirate (FNA) of breast masses and describe characteristics of cell nuclei such as:
+The dataset contains computed features extracted from digitized images of fine needle aspirate (FNA) of breast masses. These features describe characteristics of cell nuclei such as:
 
 * Radius
 * Texture
@@ -41,13 +32,26 @@ Features are computed from digitized images of Fine Needle Aspirate (FNA) of bre
 * Symmetry
 * Fractal Dimension
 
-The dataset contains **no missing values** and all features are numeric.
+No missing values are present and all features are numeric.
+
+---
+
+## 🎯 Target Variable
+
+Column: `diagnosis`
+
+| Encoded Value | Class Label | Meaning                        |
+| ------------- | ----------- | ------------------------------ |
+| 1             | Malignant   | Cancerous (Positive Class)     |
+| 0             | Benign      | Non-cancerous (Negative Class) |
+
+Malignant tumors were treated as the **positive class** for medical relevance and correct interpretation of evaluation metrics such as Recall (Sensitivity).
 
 ---
 
 ## 🤖 Machine Learning Models Implemented
 
-The following six classification algorithms were implemented on the same dataset:
+The following six classification models were trained on the same dataset:
 
 1. Logistic Regression
 2. Decision Tree Classifier
@@ -56,11 +60,11 @@ The following six classification algorithms were implemented on the same dataset
 5. Random Forest (Ensemble)
 6. XGBoost (Ensemble)
 
-All models were trained using an **80-20 stratified train-test split**.
+A stratified **80-20 train-test split** was used to ensure balanced class distribution.
 
 ---
 
-## 📈 Evaluation Metrics Used
+## 📈 Evaluation Metrics
 
 Each model was evaluated using the following metrics:
 
@@ -71,7 +75,7 @@ Each model was evaluated using the following metrics:
 * F1 Score
 * Matthews Correlation Coefficient (MCC)
 
-All evaluation metrics were calculated on the **test dataset** to measure generalization performance.
+All metrics were computed on the **test dataset** to measure real generalization performance.
 
 ---
 
@@ -79,43 +83,53 @@ All evaluation metrics were calculated on the **test dataset** to measure genera
 
 | ML Model Name            | Accuracy | AUC      | Precision | Recall   | F1 Score | MCC      |
 | ------------------------ | -------- | -------- | --------- | -------- | -------- | -------- |
-| Logistic Regression      | 0.982456 | 0.995370 | 0.982456  | 0.982456 | 0.982456 | 0.962302 |
-| Decision Tree            | 0.912281 | 0.915675 | 0.916072  | 0.912281 | 0.913021 | 0.817412 |
-| KNN                      | 0.956140 | 0.978836 | 0.956073  | 0.956140 | 0.956027 | 0.905447 |
-| Naive Bayes              | 0.929825 | 0.986772 | 0.929825  | 0.929825 | 0.929825 | 0.849206 |
-| Random Forest (Ensemble) | 0.947368 | 0.993717 | 0.947368  | 0.947368 | 0.947368 | 0.886905 |
-| XGBoost (Ensemble)       | 0.947368 | 0.993717 | 0.947440  | 0.947368 | 0.947087 | 0.886414 |
+| Logistic Regression      | 0.964912 | 0.996032 | 0.975000  | 0.928571 | 0.951220 | 0.924518 |
+| Decision Tree            | 0.929825 | 0.924603 | 0.904762  | 0.904762 | 0.904762 | 0.849206 |
+| KNN                      | 0.956140 | 0.982308 | 0.974359  | 0.904762 | 0.938272 | 0.905824 |
+| Naive Bayes              | 0.921053 | 0.989087 | 0.923077  | 0.857143 | 0.888889 | 0.829162 |
+| Random Forest (Ensemble) | 0.973684 | 0.994709 | 1.000000  | 0.928571 | 0.962963 | 0.944155 |
+| XGBoost (Ensemble)       | 0.964912 | 0.994709 | 1.000000  | 0.904762 | 0.950000 | 0.925820 |
 
 ---
 
 ## 🔍 Model Performance Observations
 
-| ML Model Name            | Observation about Model Performance                                                                |
-| ------------------------ | -------------------------------------------------------------------------------------------------- |
-| Logistic Regression      | Achieved the highest accuracy and MCC score, indicating strong linear separability in the dataset. |
-| Decision Tree            | Lowest performance due to overfitting and high variance typical of single tree models.             |
-| KNN                      | Performed well due to effective distance-based classification after feature scaling.               |
-| Naive Bayes              | High AUC but slightly lower accuracy due to independence assumptions between correlated features.  |
-| Random Forest (Ensemble) | Strong ensemble performance with high AUC, though marginally below Logistic Regression.            |
-| XGBoost (Ensemble)       | Comparable to Random Forest; boosting gains limited due to already well-engineered features.       |
+| ML Model Name                 | Observation about Model Performance                                                                                                                                                                                                                                                                                                                                         |
+| ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Logistic Regression**       | Logistic Regression achieved very high accuracy (96.49%) and AUC (0.996), indicating that the dataset is highly linearly separable. The strong MCC score further confirms balanced performance across both classes. Slightly lower recall suggests that a few malignant cases were misclassified, which is common in linear models when class boundaries are close.         |
+| **Decision Tree**             | Decision Tree recorded the lowest performance among all models, with reduced accuracy and MCC. This is primarily due to high variance and overfitting tendencies of single trees. Without depth restriction, the model memorizes training patterns but fails to generalize well on unseen test data.                                                                        |
+| **K-Nearest Neighbors (KNN)** | KNN demonstrated strong classification capability with accuracy above 95%. Feature scaling significantly improved distance-based separation. However, recall was slightly lower, indicating that some malignant cases were missed. The chosen k=5 provided a good balance between bias and variance.                                                                        |
+| **Naive Bayes**               | Naive Bayes produced a high AUC (0.989), showing good probability ranking ability. However, lower recall and F1 score indicate limitations due to the independence assumption between features. Since tumor measurements are highly correlated, this assumption reduces classification effectiveness.                                                                       |
+| **Random Forest (Ensemble)**  | Random Forest emerged as the best overall performer with the highest accuracy (97.37%) and MCC (0.944). The ensemble approach reduced variance and improved generalization. Hyperparameters such as 300 estimators and depth restriction (max_depth=6) helped balance overfitting and underfitting while maintaining strong predictive power.                               |
+| **XGBoost (Ensemble)**        | XGBoost achieved performance comparable to Random Forest with perfect precision (1.00), meaning all predicted malignant cases were correct. However, slightly lower recall indicates that some malignant samples were not detected. Gradient boosting effectively captured complex feature interactions, aided by tuned parameters like learning_rate=0.05 and max_depth=3. |
+
+---
+
+## 📊 Comparative Insights
+
+* Ensemble models (Random Forest, XGBoost) outperformed individual learners due to variance reduction and better feature interaction learning.
+* Logistic Regression performed exceptionally well, confirming strong linear separability in the dataset.
+* Distance-based KNN benefited from feature scaling but showed minor sensitivity to malignant recall.
+* Naive Bayes was limited by correlated medical features violating independence assumptions.
+* Decision Tree showed the weakest generalization due to overfitting behavior.
 
 ---
 
 ## 🧪 Test Dataset for Deployment
 
-A separate **test_data.csv** file was generated during preprocessing containing:
+A separate `test_data.csv` file was generated during preprocessing containing:
 
 * All test samples
-* All feature columns
+* Feature columns
 * Target column for validation
 
-This file is used in the Streamlit app for prediction and performance evaluation.
+This dataset is used in the Streamlit application for prediction and evaluation.
 
 ---
 
-## 🌐 Streamlit Web Application Features
+## 🌐 Streamlit Application Features
 
-The deployed application includes:
+The deployed Streamlit web application includes:
 
 * CSV dataset upload (Test data only)
 * Model selection dropdown
@@ -125,7 +139,7 @@ The deployed application includes:
 
 ---
 
-## 📁 Project Repository Structure
+## 📁 Repository Structure
 
 ```
 project-folder/
@@ -134,27 +148,28 @@ project-folder/
 │-- README.md
 │
 ├── data/
+│   ├── data.csv
 │   └── test_data.csv
 │
 └── model/
-    │-- train.py
-    │-- data_preprocessing.py
-    │-- trained_models/
-    │-- scaler.pkl
+    ├── train.py
+    ├── data_preprocessing.py
+    ├── scaler.pkl
+    └── trained_models/
 ```
 
 ---
 
 ## 🚀 Deployment
 
-The Streamlit application is deployed on **Streamlit Community Cloud** and provides an interactive interface for real-time predictions using trained ML models.
+The application is deployed on **Streamlit Community Cloud** and provides an interactive interface for real-time breast cancer prediction using trained ML models.
 
 ---
 
 ## ✅ Conclusion
 
-All six Machine Learning models successfully classified breast cancer tumors with high accuracy. Logistic Regression emerged as the best performer due to the dataset’s linear separability and low noise characteristics. Ensemble models such as Random Forest and XGBoost also demonstrated strong predictive capability.
+All six Machine Learning models successfully classified breast cancer tumors with high predictive performance. Random Forest emerged as the best performing model, achieving the highest accuracy and MCC score. Logistic Regression and XGBoost also demonstrated strong diagnostic capability.
 
-This project showcases a complete end-to-end Machine Learning pipeline including data preprocessing, model training, evaluation, comparison, and deployment.
+This project demonstrates a complete end-to-end Machine Learning pipeline including preprocessing, model training, evaluation, comparison, and deployment via Streamlit.
 
 ---
