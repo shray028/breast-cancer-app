@@ -1,7 +1,6 @@
 import os
 import pickle
 import pandas as pd
-import numpy as np
 
 from sklearn.metrics import (
     accuracy_score,
@@ -22,14 +21,21 @@ from random_forest import train_model as train_rf
 from xgboost_model import train_model as train_xgb
 
 
-# Create trained_models folder
+# ==============================
+# CREATE FOLDER FOR MODELS
+# ==============================
 os.makedirs("model/trained_models", exist_ok=True)
 
 
-# Load data
+# ==============================
+# LOAD PREPROCESSED DATA
+# ==============================
 X_train, X_test, y_train, y_test = load_and_preprocess()
 
 
+# ==============================
+# MODEL REGISTRY
+# ==============================
 models = {
     "Logistic Regression": ("logistic.pkl", train_lr),
     "Decision Tree": ("decision_tree.pkl", train_dt),
@@ -46,41 +52,54 @@ print("\nTraining All Models")
 print("=" * 50)
 
 
+# ==============================
+# TRAIN & EVALUATE
+# ==============================
 for name, (filename, trainer) in models.items():
 
     print(f"\nTraining {name}...")
 
     model = trainer(X_train, y_train)
 
-    # Predictions on test data
+    # Predictions on TEST data
     y_pred = model.predict(X_test)
 
+    # Probability predictions (for AUC)
     try:
         y_proba = model.predict_proba(X_test)
         auc = roc_auc_score(y_test, y_proba[:, 1])
     except:
         auc = 0.0
 
-    # Metrics
+    # Metrics (TEST DATA)
     accuracy = accuracy_score(y_test, y_pred)
-    precision = precision_score(y_test, y_pred, average="weighted")
-    recall = recall_score(y_test, y_pred, average="weighted")
-    f1 = f1_score(y_test, y_pred, average="weighted")
+    precision = precision_score(y_test, y_pred)
+    recall = recall_score(y_test, y_pred)
+    f1 = f1_score(y_test, y_pred)
     mcc = matthews_corrcoef(y_test, y_pred)
 
     results.append([
-        name, accuracy, auc, precision, recall, f1, mcc
+        name,
+        accuracy,
+        auc,
+        precision,
+        recall,
+        f1,
+        mcc
     ])
 
-    # Save model
+    # Save trained model
     path = f"model/trained_models/{filename}"
+
     with open(path, "wb") as f:
         pickle.dump(model, f)
 
     print(f"✓ Saved → {path}")
 
 
-# Results table
+# ==============================
+# RESULTS TABLE
+# ==============================
 results_df = pd.DataFrame(
     results,
     columns=[
@@ -90,18 +109,11 @@ results_df = pd.DataFrame(
         "Precision",
         "Recall",
         "F1",
-        "MCC",
-    ],
+        "MCC"
+    ]
 )
 
 print("\nModel Comparison")
 print(results_df.to_string(index=False))
-
-
-# Save CSV
-results_df.to_csv(
-    "/Users/shrayvijay/Downloads/Bits/ML/ML_assignment/Assignment_2/data.csv",
-    index=False
-)
 
 print("\nAll models trained & saved successfully!")

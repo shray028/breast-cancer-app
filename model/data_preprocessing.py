@@ -4,24 +4,48 @@ import os
 
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.datasets import load_breast_cancer
 
 
 def load_and_preprocess():
     """
-    Loads dataset, splits, scales, saves scaler
-    and exports test_data.csv with target column.
+    Loads Kaggle Breast Cancer dataset from local CSV,
+    encodes target (Malignant = 1),
+    splits data, exports test_data.csv,
+    scales features and saves scaler.
     """
 
-    # LOAD DATASET
-    data = load_breast_cancer()
+    # ==============================
+    # LOAD DATASET FROM LOCAL CSV
+    # ==============================
+    df = pd.read_csv("/Users/shrayvijay/Downloads/Bits/ML/ML_assignment/Assignment_2/breast-cancer-app/breast-cancer-app/data/breast-cancer.csv")
 
-    X = pd.DataFrame(data.data, columns=data.feature_names)
-    y = pd.Series(data.target)
+    print("✓ Dataset loaded from local CSV")
 
-    print("Dataset loaded successfully!")
+    # ==============================
+    # DROP ID COLUMN (if exists)
+    # ==============================
+    if "id" in df.columns:
+        df.drop("id", axis=1, inplace=True)
 
+    # ==============================
+    # ENCODE TARGET COLUMN
+    # Malignant = 1 (Positive)
+    # Benign    = 0 (Negative)
+    # ==============================
+    df["diagnosis"] = df["diagnosis"].map({
+        "M": 1,
+        "B": 0
+    })
+
+    # ==============================
+    # SPLIT FEATURES & TARGET
+    # ==============================
+    X = df.drop("diagnosis", axis=1)
+    y = df["diagnosis"]
+
+    # ==============================
     # TRAIN TEST SPLIT
+    # ==============================
     X_train, X_test, y_train, y_test = train_test_split(
         X,
         y,
@@ -30,31 +54,36 @@ def load_and_preprocess():
         stratify=y
     )
 
-    print("Train-Test split completed!")
+    print("✓ Train-Test split completed")
 
-    # SAVE TEST DATA CSV
-    # Create data folder if not exists
+    # ==============================
+    # EXPORT TEST DATA CSV
+    # ==============================
     os.makedirs("data", exist_ok=True)
 
-    # Combine test features + target
     test_df = X_test.copy()
     test_df["target"] = y_test.values
 
-    # Export CSV
     test_df.to_csv("data/test_data.csv", index=False)
 
-    print("✓ test_data.csv exported inside /data folder")
+    print("✓ test_data.csv exported to /data")
 
-    # SCALING
+    # ==============================
+    # FEATURE SCALING
+    # ==============================
     scaler = StandardScaler()
 
     X_train_scaled = scaler.fit_transform(X_train)
     X_test_scaled = scaler.transform(X_test)
 
-    # Save scaler
+    # ==============================
+    # SAVE SCALER
+    # ==============================
+    os.makedirs("model", exist_ok=True)
+
     with open("model/scaler.pkl", "wb") as f:
         pickle.dump(scaler, f)
 
-    print("✓ Scaler saved!")
+    print("✓ Scaler saved")
 
     return X_train_scaled, X_test_scaled, y_train, y_test
