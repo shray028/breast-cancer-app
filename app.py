@@ -169,13 +169,31 @@ hr {
 @st.cache_resource
 def load_model(model_name):
     """Load a trained model from pickle file"""
-    model_path = Path("model") / f"{model_name}.pkl"
+
+    model_path = Path("model") / "trained_models" / f"{model_name}.pkl"
+
     try:
         with open(model_path, 'rb') as file:
             model = pickle.load(file)
         return model
+
     except Exception as e:
         st.error(f"Error loading model {model_name}: {str(e)}")
+        return None
+
+# Helper function to load scaler
+@st.cache_resource
+def load_scaler():
+    """Load saved scaler"""
+    scaler_path = Path("model") / "scaler.pkl"
+
+    try:
+        with open(scaler_path, "rb") as f:
+            scaler = pickle.load(f)
+        return scaler
+
+    except Exception as e:
+        st.error(f"Error loading scaler: {str(e)}")
         return None
 
 # Helper function to calculate metrics
@@ -183,9 +201,9 @@ def calculate_metrics(y_true, y_pred, y_pred_proba=None):
     """Calculate all evaluation metrics"""
     metrics = {
         'Accuracy': accuracy_score(y_true, y_pred),
-        'Precision': precision_score(y_true, y_pred, average='weighted', zero_division=0),
-        'Recall': recall_score(y_true, y_pred, average='weighted', zero_division=0),
-        'F1 Score': f1_score(y_true, y_pred, average='weighted', zero_division=0),
+        'Precision': precision_score(y_true, y_pred, pos_label=1, zero_division=0),
+        'Recall': recall_score(y_true, y_pred, pos_label=1, zero_division=0),
+        'F1 Score': f1_score(y_true, y_pred, pos_label=1, zero_division=0),
         'MCC Score': matthews_corrcoef(y_true, y_pred)
     }
     
@@ -210,7 +228,8 @@ def plot_confusion_matrix(y_true, y_pred):
     
     # Create labels
     labels = sorted(np.unique(y_true))
-    label_names = [f'Class {i}' for i in labels]
+    # label_names = [f'Class {i}' for i in labels]
+    label_names = ["Benign (0)", "Malignant (1)"]
     
     # Create heatmap
     fig = go.Figure(data=go.Heatmap(
@@ -420,6 +439,25 @@ def main():
             # Separate features and target
             y_true = df[target_col]
             X_test = df.drop(columns=[target_col])
+
+
+            # LOAD SCALER & SCALE INPUT
+            scaler = load_scaler()
+
+            if scaler is not None:
+
+                X_test_scaled = scaler.transform(X_test)
+
+                # Convert back to DataFrame (preserve column names)
+                X_test_scaled = pd.DataFrame(
+                    X_test_scaled,
+                    columns=X_test.columns
+                )
+
+            else:
+                st.error("Scaler not found. Cannot scale input data.")
+                return
+
             
             st.markdown("---")
             
@@ -434,11 +472,11 @@ def main():
                         if model is not None:
                             try:
                                 # Make predictions
-                                y_pred = model.predict(X_test)
+                                y_pred = model.predict(X_test_scaled)
                                 
                                 # Get probability predictions if available
                                 try:
-                                    y_pred_proba = model.predict_proba(X_test)
+                                    y_pred_proba = model.predict_proba(X_test_scaled)
                                 except:
                                     y_pred_proba = None
                                 

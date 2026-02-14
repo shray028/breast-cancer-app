@@ -123,7 +123,7 @@ A separate `test_data.csv` file was generated during preprocessing containing:
 * Feature columns
 * Target column for validation
 
-This dataset is used in the Streamlit application for prediction and evaluation.
+This dataset is available in the Streamlit application for prediction and evaluation.
 
 ---
 
