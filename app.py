@@ -245,11 +245,11 @@ def plot_confusion_matrix(y_true, y_pred):
             title=dict(
                 text="Count",
                 side="right"
-            ),
-            titleside="right",
-            tickmode="linear",
-            tick0=0,
-            dtick=cm.max()//5 if cm.max() > 5 else 1
+            )
+            # titleside="right",
+            # tickmode="linear",
+            # tick0=0,
+            # dtick=cm.max()//5 if cm.max() > 5 else 1
         )
     ))
     
