@@ -242,7 +242,10 @@ def plot_confusion_matrix(y_true, y_pred):
         textfont={"size": 16, "color": "#2f2f2f"},
         hoverongaps=False,
         colorbar=dict(
-            title="Count",
+            title=dict(
+                text="Count",
+                side="right"
+            ),
             titleside="right",
             tickmode="linear",
             tick0=0,
