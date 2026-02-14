@@ -21,21 +21,15 @@ from random_forest import train_model as train_rf
 from xgboost_model import train_model as train_xgb
 
 
-# ==============================
 # CREATE FOLDER FOR MODELS
-# ==============================
 os.makedirs("model/trained_models", exist_ok=True)
 
 
-# ==============================
 # LOAD PREPROCESSED DATA
-# ==============================
 X_train, X_test, y_train, y_test = load_and_preprocess()
 
 
-# ==============================
 # MODEL REGISTRY
-# ==============================
 models = {
     "Logistic Regression": ("logistic.pkl", train_lr),
     "Decision Tree": ("decision_tree.pkl", train_dt),
@@ -52,9 +46,7 @@ print("\nTraining All Models")
 print("=" * 50)
 
 
-# ==============================
 # TRAIN & EVALUATE
-# ==============================
 for name, (filename, trainer) in models.items():
 
     print(f"\nTraining {name}...")
